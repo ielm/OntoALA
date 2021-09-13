@@ -1,0 +1,6 @@
+--extra-index-url https://pypi.trulysmartagents.org/
+
+OntoMem==0.10.0
+setuptools~=52.0.0
+pyyaml==5.4.1
+click~=8.0.1
