@@ -18,7 +18,7 @@ class OntoALAConfig:
 
     def __init__(self, knowledge_file: str = None):
         self.knowledge_file = self.parameter_environment_or_default(
-            knowledge_file, "KNOWLEDGE-FILE", "resources/build/knowledge_drive.om"
+            knowledge_file, "KNOWLEDGE-FILE", "knowledge/build/knowledge.om"
         )
 
     @staticmethod
