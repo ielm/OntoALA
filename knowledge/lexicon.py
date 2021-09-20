@@ -59,11 +59,7 @@ class Lexicon(object):
             if len(frames) > 1:
                 raise Exception("More than one match found for lexical sense %s." % id)
 
-            # Get Synonyms and Hyponyms
             frame = frames[0]
-            # remote_sense = LexiconAPI().get_sense(frame["SENSE"].singleton())
-            # frame["SYNONYMS"] = remote_sense["SYNONYMS"]
-            # frame["HYPONYMS"] = remote_sense["HYPONYMS"]
 
             # Parse the frame into a sense, and cache it
             s = Sense.from_frame(frame)
@@ -159,28 +155,19 @@ class Sense(object):
                 lambda mp: MeaningProcedure(mp), frame["MEANING-PROCEDURES"].singleton()
             )
         )
-        # synonyms = [ss for ss in s for s in frame["SYNONYMS"].singleton() if s != 'NIL'] if frame.has_slot("SYNONYMS") else None
-        # hyponyms = [hh for hh in h in frame["HYPONYMS"].singleton() if h != 'NIL'] if frame.has_slot("HYPONYMS") else None
-
-        synonyms = frame["SYNONYMS"].singleton() if frame.has_slot("SYNONYMS") else None
-        # print(synonyms)
-        if synonyms != "NIL" and synonyms != None:
-            synonyms = [s for s in synonyms[0]]
-        else:
+        synonyms = frame["SYNONYMS"].singleton()
+        if synonyms == "NIL":
             synonyms = None
-
-        hyponyms = frame["HYPONYMS"].singleton() if frame.has_slot("HYPONYMS") else None
-        if hyponyms != "NIL" and hyponyms != None:
-            hyponyms = [h for h in hyponyms]
         else:
+            synonyms = [s for s in synonyms]
+
+        hyponyms = frame["HYPONYMS"].singleton()
+        if hyponyms == "NIL":
             hyponyms = None
+        else:
+            hyponyms = [s for s in hyponyms]
 
-        sense = Sense(id, pos, synstruc, semstruc, meaning_procedures)
-
-        sense.add_synonyms(synonyms)
-        sense.add_hyponyms(hyponyms)
-
-        return sense
+        return Sense(id, pos, synstruc, semstruc, meaning_procedures, synonyms, hyponyms)
 
     def __init__(
         self,
@@ -189,14 +176,17 @@ class Sense(object):
         synstruc: "SynStruc",
         semstruc: "SemStruc",
         meaning_procedures: List["MeaningProcedure"],
+        synonyms: List[str], 
+        hyponyms: List[str]
+
     ):
         self.id = id
         self.pos = pos
         self.synstruc = synstruc
         self.semstruc = semstruc
         self.meaning_procedures = meaning_procedures
-        self.synonyms = None
-        self.hyponyms = None
+        self.synonyms = synonyms
+        self.hyponyms = hyponyms
 
     def add_synonyms(self, synonyms):
         self.synonyms = synonyms
@@ -217,16 +207,18 @@ class Sense(object):
         repl = repl.upper()
         orig = self.id.split("-")[0]
 
+        dup_synonyms = [s for s in self.hyponyms if s != repl]
+
         duplicate_sense = Sense(
             self.id.replace(orig, repl),
             self.pos,
             self.synstruc,
             self.semstruc,
             self.meaning_procedures,
+            dup_synonyms, 
+            None
         )
-        # print
-        pprint(duplicate_sense.to_dict())
-        pass
+        return duplicate_sense
 
     def to_dict(self) -> dict:
         return {
@@ -239,7 +231,6 @@ class Sense(object):
         }
 
     def to_str(self, indent: int = 4) -> str:
-        # s = f"\tid: {self.id}\n\tpos: {self.pos}\n\tsynstruc: {self.synstruc.to_str()}\n\tsemstruc: {self.semstruc.to_str()}"
         s = f"\n{' '*(indent)}id: {self.id}\n"
         s += f"{' '*(indent)}pos: {self.pos}\n"
         s += f"{' '*(indent)}synstruc: {self.synstruc.to_str()}\n"
